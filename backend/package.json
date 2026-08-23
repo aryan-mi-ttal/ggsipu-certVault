@@ -1,0 +1,33 @@
+{
+  "name": "certvault-backend",
+  "version": "1.0.0",
+  "description": "CertVault Express.js backend API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "certvault",
+    "express",
+    "backend"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "googleapis": "^176.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.5",
+    "pdf-lib": "^1.17.1",
+    "pg": "^8.23.0",
+    "qrcode": "^1.5.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

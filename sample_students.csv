@@ -1,6 +1,7 @@
 CertID,RollNumber,StudentName,Email,School,Course,EventName,IssueDate,Status
-GGSIPU-2026-DSW-1001,01216403221,Aarav Sharma,aarav.sharma@ggsipu.edu,USICT,B.Tech CSE,Smart India Hackathon 2026 Internal Round,2026-08-15,Approved
-GGSIPU-2026-DSW-1002,04516403221,Ananya Verma,ananya.verma@ggsipu.edu,USICT,B.Tech IT,Annual Cybersecurity Workshop 2026,2026-08-15,Approved
-GGSIPU-2026-DSW-1003,08916403221,Rohan Gupta,rohan.gupta@ggsipu.edu,USMS,MBA Finance,Industrial Internship & Leadership Training,2026-08-14,Approved
-GGSIPU-2026-DSW-1004,11216403221,Priya Nair,priya.nair@ggsipu.edu,USLLS,BA LLB,National Moot Court Competition 2026,2026-08-10,Approved
-GGSIPU-2026-DSW-1005,15016403221,Kabir Patel,kabir.patel@ggsipu.edu,USCT,B.Tech Chemical,Green Energy & Tech Symposium,2026-08-10,Revoked
+GGSIPU-2026-DSW-1001,1216403221,Aarav Sharma,aarav.sharma@ggsipu.edu,USICT,B.Tech CSE,Smart India Hackathon 2026 Internal Round,15-08-2026,Approved
+GGSIPU-2026-DSW-1002,4516403221,Ananya Verma,ananya.verma@ggsipu.edu,USICT,B.Tech IT,Annual Cybersecurity Workshop 2026,15-08-2026,Approved
+GGSIPU-2026-DSW-1003,8916403221,Rohan Gupta,rohan.gupta@ggsipu.edu,USMS,MBA Finance,Industrial Internship & Leadership Training,14-08-2026,Approved
+GGSIPU-2026-DSW-1004,11216403221,Priya Nair,priya.nair@ggsipu.edu,USLLS,BA LLB,National Moot Court Competition 2026,10-08-2026,Approved
+GGSIPU-2026-DSW-1005,15016403221,Kabir Patel,kabir.patel@ggsipu.edu,USCT,B.Tech Chemical,Green Energy & Tech Symposium,10-08-2026,Revoked
+GGSIPU-2026-DSW-1006,3019051924,Jayant Baliyan,jayant.3019051924@std.ggsipu.ac.in,,B.Tech AI-DS,SIH,22-08-2026,Approved

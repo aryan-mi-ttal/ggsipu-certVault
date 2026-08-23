@@ -1,69 +1,99 @@
-# GGSIPU Certificate Management System - Production Deployment Guide
+# GGSIPU CertVault - Deployment & Access Control Guide
 
 ## Overview
-GGSIPU CertVault runs natively on GGSIPU Google Workspace domain using Google Apps Script, Google Sheets (Immutable Ledger), Google Drive (Encrypted Certificate Vault), and Gmail API with zero external cloud infrastructure costs.
+
+GGSIPU CertVault provides a unified, single deployment web application:
+1. **Public Verifier (Default Open Access)**: When anyone opens `index.html` (or the deployed Apps Script URL), it immediately displays the **Public Verifier** (Search by Cert ID, Live QR code webcam scanner, PDF drag-and-drop WebCrypto SHA-256 verifier). No login required.
+2. **Staff Portal (Google Authentication & Role-Based Access)**: Clicking the **"Staff Portal"** button in the header opens a Google authentication prompt. Once authenticated against the authorized `Users` sheet in Google Sheets, the system unlocks the staff management modules (Dashboard, Bulk CSV Issuer, Approvals Queue, Certificate Designer, Audit Logs, Staff Users).
 
 ---
 
 ## Step 1: Set up Google Sheets Master Ledger
-1. Log in to your GGSIPU Google Workspace account (`@ipu.ac.in` / `@ggsipu.edu`).
+
+1. Log in to your GGSIPU Google Workspace account (`@ipu.ac.in` or `@ggsipu.edu`).
 2. Create a new Google Sheet named **`GGSIPU_Certificate_Master_Ledger`**.
-3. Create three sheets (tabs) at the bottom:
-   - **`CertificateLedger`**: Stores all issued, pending, and revoked certificates with SHA-256 and Merkle roots.
-   - **`AuditLogs`**: Stores tamper-evident action logs of all user actions.
-   - **`Revocations`**: Stores formal revocation records and reasons.
+3. Create the following **4 sheets (tabs)**:
+   - **`CertificateLedger`**: Stores all issued, pending, and revoked certificates with SHA-256 digests and Merkle roots.
+   - **`Users`**: Stores authorized staff email addresses and assigned RBAC roles.
+   - **`AuditLogs`**: Stores tamper-evident action logs of all user actions, state transitions, and staff updates.
+   - **`Revocations`**: Stores formal revocation records and mandatory reasons.
+
+4. Initialize the **`Users`** sheet with header row:
+   ```
+   Email | Role | Added On
+   ```
+   Add initial staff accounts on subsequent rows:
+   ```
+   dsw.admin@ipu.ac.in | Admin | 2026-08-20
+   dean.dsw@ipu.ac.in  | Approver | 2026-08-20
+   usict.issuer@ipu.ac.in | Issuer | 2026-08-20
+   audit.viewer@ipu.ac.in | Viewer | 2026-08-20
+   ```
 
 ---
 
 ## Step 2: Bind Google Apps Script Backend
+
 1. In your Google Sheet, click **Extensions -> Apps Script**.
-2. Replace `Code.gs` with [`apps-script/Code.gs`](file:///E:/certVault/ggsipu-certVault/apps-script/Code.gs).
-3. Create the following additional script files (**+ -> Script**):
-   - `CryptoEngine.gs` &larr; copy from [`apps-script/CryptoEngine.gs`](file:///E:/certVault/ggsipu-certVault/apps-script/CryptoEngine.gs)
-   - `CertGenerator.gs` &larr; copy from [`apps-script/CertGenerator.gs`](file:///E:/certVault/ggsipu-certVault/apps-script/CertGenerator.gs)
-   - `ApprovalWorkflow.gs` &larr; copy from [`apps-script/ApprovalWorkflow.gs`](file:///E:/certVault/ggsipu-certVault/apps-script/ApprovalWorkflow.gs)
-   - `RevocationLog.gs` &larr; copy from [`apps-script/RevocationLog.gs`](file:///E:/certVault/ggsipu-certVault/apps-script/RevocationLog.gs)
-4. Enable the manifest file view (**Project Settings -> Show "appsscript.json" manifest file in editor**) and paste the contents of [`apps-script/appsscript.json`](file:///E:/certVault/ggsipu-certVault/apps-script/appsscript.json).
+2. Rename the project to **`ggsipu-certVault`**.
+3. Copy the script files from [`apps-script/`](file:///D:/Ideathon/SIH2026-TechRoaches/apps-script/):
+   - `Code.gs` &larr; [`apps-script/Code.gs`](file:///D:/Ideathon/SIH2026-TechRoaches/apps-script/Code.gs)
+   - `CryptoEngine.gs` &larr; [`apps-script/CryptoEngine.gs`](file:///D:/Ideathon/SIH2026-TechRoaches/apps-script/CryptoEngine.gs)
+   - `CertGenerator.gs` &larr; [`apps-script/CertGenerator.gs`](file:///D:/Ideathon/SIH2026-TechRoaches/apps-script/CertGenerator.gs)
+   - `ApprovalWorkflow.gs` &larr; [`apps-script/ApprovalWorkflow.gs`](file:///D:/Ideathon/SIH2026-TechRoaches/apps-script/ApprovalWorkflow.gs)
+   - `RevocationLog.gs` &larr; [`apps-script/RevocationLog.gs`](file:///D:/Ideathon/SIH2026-TechRoaches/apps-script/RevocationLog.gs)
+4. Enable manifest view (**Project Settings -> Show "appsscript.json" manifest file in editor**) and paste [`apps-script/appsscript.json`](file:///D:/Ideathon/SIH2026-TechRoaches/apps-script/appsscript.json).
 
 ---
 
-## Step 3: Configure Security & API Keys
-1. In the Apps Script editor, click **Project Settings** (gear icon on the left sidebar).
-2. Scroll to **Script Properties** and click **Add script property**.
-3. Add the following property:
-   - **Property**: `ADMIN_API_KEY`
-   - **Value**: `[Set your strong secret admin key, e.g., GGSIPU_DSW_PROD_SECRET_2026]`
-4. Click **Save script properties**.
+## Step 3: Authorize Permissions & Deploy as Web App
 
-> [!NOTE]
-> Setting `ADMIN_API_KEY` ensures only authorized administrative portals can issue batches, approve certificates, revoke certificates, or export ledger dumps. Public verification endpoints (`verifyId` and `verifyHash`) remain open to anyone without credentials.
+1. **Authorize OAuth Scopes**:
+   - In the Apps Script editor, in the top toolbar dropdown (next to "Debug"), select the function **`testAuthorizeAndSendEmail`**.
+   - Click **Run ▶**.
+   - When the popup **"Authorization required"** appears:
+     - Click **Review Permissions**.
+     - Select your Google account.
+     - Click **Advanced** &rarr; **Go to ggsipu-certVault (unsafe)**.
+     - Click **Allow**.
+   - Check the Execution log at the bottom; you should see: `"Email sent successfully... via GmailApp / MailApp"`.
 
----
+2. **Deploy as Web App (Single Deployment)**:
+   - Click **Deploy -> New Deployment** (or **Manage Deployments -> Edit -> New Version**).
+   - Select type: **Web App**.
+   - Configuration:
+     - **Description**: `GGSIPU CertVault Unified System v3.1`
+     - **Execute as**: `Me (your.email@ipu.ac.in)` *(Required so backend relay can send emails)*
+     - **Who has access**: `Anyone` *(Ensures public verifier and backend API relay are accessible)*
+   - Click **Deploy**.
+   - Copy the generated **Web App URL** (e.g. `https://script.google.com/macros/s/.../exec`) and set it as `GAS_API_URL` in `backend/.env`.
 
-## Step 4: Deploy Apps Script Web App
-1. Click **Deploy -> New Deployment**.
-2. Select type: **Web App** (click the gear icon next to Select type).
-3. Configuration:
-   - **Description**: `GGSIPU DSW Certificate Verification API v2.0`
-   - **Execute as**: `Me (your-email@ipu.ac.in)`
-   - **Who has access**: `Anyone` *(Required so students, employers, and external verifiers can verify certificates via QR code without requiring a Google Workspace login)*
-4. Click **Deploy** and grant Google OAuth Permissions (Spreadsheet, Drive, Gmail).
-5. Copy the generated **Web App URL** (e.g., `https://script.google.com/macros/s/AKfycb.../exec`).
-
----
-
-## Step 5: Configure Frontend Web Portal
-1. Open [`/frontend/index.html`](file:///E:/certVault/ggsipu-certVault/frontend/index.html) in your browser or host the `/frontend/` folder on GitHub Pages / Firebase Hosting / GGSIPU Intranet.
-2. Click the **API Config** button in the top navigation bar.
-3. Enter your:
-   - **Google Apps Script Web App URL**
-   - **Admin API Key** (matching the `ADMIN_API_KEY` set in Script Properties)
-4. Click **Save & Connect**.
 
 ---
 
-## Step 6: Security & Workflow Verification
-- **Bulk CSV Issuance**: New certificates are created in `Pending` status with batch Merkle root computed and persisted across all rows.
-- **Approval Queue**: Competent authority signs on digital canvas to approve pending batches.
-- **Revocation Protection**: Revoked certificates cannot be re-approved; active certificates require mandatory reason logging to revoke.
-- **Public Verification**: Fast, unauthenticated QR scan, CertID lookup, or local PDF WebCrypto SHA-256 verification.
+## Step 4: Role-Based Access Control (RBAC) Mapping
+
+| Capability | Public (No Login) | Viewer | Issuer | Approver | Admin |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Public Verifier (QR / ID / PDF)** | ✅ Open | ✅ Open | ✅ Open | ✅ Open | ✅ Open |
+| **Dashboard Analytics & Master Ledger** | ❌ | ✅ Read-only | ✅ Full | ✅ Full | ✅ Full |
+| **Bulk CSV Uploader & Batch Issuance** | ❌ | ❌ | ✅ Full | ❌ | ✅ Full |
+| **Certificate Designer Canvas Preview** | ❌ | ❌ | ✅ Full | ❌ | ✅ Full |
+| **Digital Signature & Approval Queue** | ❌ | ❌ | ❌ | ✅ Full | ✅ Full |
+| **Certificate Revocation (with reason)** | ❌ | ❌ | ❌ | ✅ Full | ✅ Full |
+| **Immutable Audit Trail Logs** | ❌ | ✅ Read-only | ❌ | ✅ Read-only | ✅ Full |
+| **Staff Users Management (`Users` Tab)** | ❌ | ❌ | ❌ | ❌ | ✅ Full (CRUD) |
+
+---
+
+## Step 5: Managing Staff Accounts
+
+### Adding a Staff Member
+1. Log in to the Staff Portal with an **Admin** account.
+2. Click the **Staff Users** tab in the top navigation bar.
+3. Click **Add New Staff Member**.
+4. Enter the Google email and select their role (`Admin`, `Approver`, `Issuer`, `Viewer`).
+5. Click **Save Staff User**. The change takes effect immediately and updates the `Users` sheet.
+
+### Direct Google Sheets Editing
+Open the `Users` tab in the Google Sheet and add, edit, or delete rows directly.

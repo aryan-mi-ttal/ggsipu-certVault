@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GGSIPU CertVault - Blockchain Certificate Lifecycle & Verification Platform</title>
-  <meta name="description" content="GGSIPU Directorate of Students' Welfare Lite Blockchain-Based Certificate Generation, Verification and Management Platform.">
+  <title>GGSIPU CertVault - Public Verifier & Staff Portal</title>
+  <meta name="description" content="GGSIPU Directorate of Students' Welfare Lite Blockchain Certificate Generation, Verification and Management Platform.">
   <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,35 +35,65 @@
         </div>
       </div>
 
+      <!-- NAVIGATION LINKS: PUBLIC VERIFIER DEFAULT; STAFF TABS UNLOCKED ON LOGIN -->
       <nav class="nav-links" aria-label="Main Navigation">
-        <button class="nav-btn active" data-tab="dashboard-tab" id="nav-btn-dashboard">
-          <i data-feather="grid"></i> Dashboard
-        </button>
-        <button class="nav-btn" data-tab="verifier-tab" id="nav-btn-verifier">
+        <!-- Public Verifier (Active for everyone on homepage) -->
+        <button class="nav-btn active" data-tab="verifier-tab" id="nav-btn-verifier">
           <i data-feather="shield-check"></i> Public Verifier
         </button>
-        <button class="nav-btn" data-tab="issuer-tab" id="nav-btn-issuer">
+
+        <!-- Staff Portal Tabs (Protected: Unlocked on NeonDB Authentication) -->
+        <button class="nav-btn staff-tab role-perm-all" data-tab="dashboard-tab" id="nav-btn-dashboard" style="display:none;">
+          <i data-feather="grid"></i> Dashboard
+        </button>
+
+        <button class="nav-btn staff-tab role-perm-issuer role-perm-admin" data-tab="issuer-tab" id="nav-btn-issuer" style="display:none;">
           <i data-feather="upload-cloud"></i> Bulk Issuer
         </button>
-        <button class="nav-btn" data-tab="approval-tab" id="nav-btn-approval">
+
+        <button class="nav-btn staff-tab role-perm-approver role-perm-admin" data-tab="approval-tab" id="nav-btn-approval" style="display:none;">
           <i data-feather="check-square"></i> Approvals <span class="badge-pill" id="pending-count-badge">0</span>
         </button>
-        <button class="nav-btn" data-tab="template-tab" id="nav-btn-template">
+
+        <button class="nav-btn staff-tab role-perm-issuer role-perm-admin" data-tab="template-tab" id="nav-btn-template" style="display:none;">
           <i data-feather="file-text"></i> Certificate Designer
         </button>
-        <button class="nav-btn" data-tab="audit-tab" id="nav-btn-audit">
+
+        <button class="nav-btn staff-tab role-perm-approver role-perm-viewer role-perm-admin" data-tab="audit-tab" id="nav-btn-audit" style="display:none;">
           <i data-feather="shield"></i> Audit Logs
+        </button>
+
+        <button class="nav-btn staff-tab role-perm-admin" data-tab="users-tab" id="nav-btn-users" style="display:none;">
+          <i data-feather="users"></i> Staff Users
         </button>
       </nav>
 
+      <!-- HEADER ACTIONS -->
       <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" id="api-config-btn" title="Configure Apps Script Web App & Admin API Key">
-          <i data-feather="key"></i> API Config
+        <!-- Staff Portal Login Button (Visible when unauthenticated) -->
+        <button class="btn btn-primary" id="staff-login-btn">
+          <i data-feather="lock"></i> Staff Portal
         </button>
+
+        <!-- Authenticated Staff Identity (Visible when authenticated) -->
+        <div class="user-badge-container" id="staff-user-badge" style="display:none;">
+          <i data-feather="user-check" style="width:14px; height:14px; color:var(--success);"></i>
+          <span class="user-email-text" id="active-user-email">staff@ipu.ac.in</span>
+          <span class="role-pill admin" id="active-user-role">ADMIN</span>
+          <button class="btn btn-secondary btn-sm" id="staff-logout-btn" title="Exit Staff Portal" style="margin-left:6px; padding:3px 8px; font-size:0.7rem;">
+            <i data-feather="log-out"></i> Logout
+          </button>
+        </div>
+
+        <button class="btn btn-secondary btn-sm role-perm-admin" id="api-config-btn" title="Configure Backend & System Settings" style="display:none;">
+          <i data-feather="settings"></i> Config
+        </button>
+
         <div class="connection-status" id="connection-status-pill" title="Click to view connection info">
           <span class="status-dot online" id="status-dot"></span>
           <span class="status-text" id="status-mode-text">Local Engine Active</span>
         </div>
+
         <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Light/Dark Theme">
           <i data-feather="moon" id="theme-icon"></i>
         </button>
@@ -74,126 +104,12 @@
   <!-- MAIN APP CONTAINER -->
   <main class="main-content">
 
-    <!-- SECTION 1: DASHBOARD VIEW -->
-    <section id="dashboard-tab" class="tab-pane active">
-      <div class="pane-header">
-        <div>
-          <h2>Certificate Analytics & Master Ledger</h2>
-          <p class="section-desc">Overview of university-wide certificate lifecycle, tamper verification metrics, and Merkle root anchoring.</p>
-        </div>
-        <div class="header-btns">
-          <button class="btn btn-secondary" id="refresh-data-btn">
-            <i data-feather="refresh-cw"></i> Refresh Ledger
-          </button>
-          <button class="btn btn-primary" id="dashboard-issue-btn">
-            <i data-feather="plus"></i> Issue New Certificates
-          </button>
-        </div>
-      </div>
-
-      <!-- METRICS GRID -->
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-icon blue">
-            <i data-feather="award"></i>
-          </div>
-          <div class="metric-info">
-            <span class="metric-label">Total Certificates</span>
-            <h3 class="metric-value" id="metric-total-certs">0</h3>
-            <span class="metric-sub text-success">Google Workspace Ledger</span>
-          </div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-icon green">
-            <i data-feather="shield"></i>
-          </div>
-          <div class="metric-info">
-            <span class="metric-label">Approved / Verified</span>
-            <h3 class="metric-value" id="metric-verified-count">0</h3>
-            <span class="metric-sub">SHA-256 Digest Matched</span>
-          </div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-icon yellow">
-            <i data-feather="clock"></i>
-          </div>
-          <div class="metric-info">
-            <span class="metric-label">Pending Approval</span>
-            <h3 class="metric-value" id="metric-pending-count">0</h3>
-            <span class="metric-sub text-warning">Awaiting Authority Sign-off</span>
-          </div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-icon red">
-            <i data-feather="alert-triangle"></i>
-          </div>
-          <div class="metric-info">
-            <span class="metric-label">Revoked Certificates</span>
-            <h3 class="metric-value" id="metric-revoked-count">0</h3>
-            <span class="metric-sub text-danger">Blacklisted in Ledger</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- RECENT CERTIFICATES LEDGER TABLE -->
-      <div class="card table-card">
-        <div class="card-header">
-          <div class="card-title-group">
-            <h3>Master Certificate Ledger</h3>
-            <span class="badge" id="ledger-total-badge">0 Certificates</span>
-          </div>
-          <div class="table-filters">
-            <div class="search-box">
-              <i data-feather="search"></i>
-              <input type="text" id="ledger-search-input" placeholder="Search by Student Name, Roll No, or Cert ID...">
-            </div>
-            <select id="school-filter-select" class="form-select">
-              <option value="ALL">All Schools (USICT, USMS, USLLS...)</option>
-              <option value="USICT">USICT</option>
-              <option value="USMS">USMS</option>
-              <option value="USLLS">USLLS</option>
-              <option value="USCT">USCT</option>
-            </select>
-            <select id="status-filter-select" class="form-select">
-              <option value="ALL">All Statuses</option>
-              <option value="Approved">Approved</option>
-              <option value="Pending">Pending</option>
-              <option value="Revoked">Revoked</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="table-responsive">
-          <table class="data-table" id="master-ledger-table">
-            <thead>
-              <tr>
-                <th>Cert ID</th>
-                <th>Student Details</th>
-                <th>School & Course</th>
-                <th>Event / Achievement</th>
-                <th>Issue Date</th>
-                <th>Status</th>
-                <th>SHA-256 Cryptographic Hash</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="ledger-table-body">
-              <!-- Rendered dynamically by JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 2: PUBLIC VERIFICATION PORTAL -->
-    <section id="verifier-tab" class="tab-pane">
+    <!-- SECTION 1: PUBLIC VERIFICATION PORTAL (DEFAULT ACTIVE VIEW) -->
+    <section id="verifier-tab" class="tab-pane active">
       <div class="pane-header">
         <div>
           <h2>Public Certificate Verification & QR Inspector</h2>
-          <p class="section-desc">Instantly verify certificate authenticity using QR Code scanner, Certificate ID, or client-side PDF SHA-256 hash comparison. <em>(Public Open Access)</em></p>
+          <p class="section-desc">Instantly verify certificate authenticity using QR Code scanner, Certificate ID, or client-side PDF SHA-256 hash comparison. <em>(Public Open Access &bull; No login required)</em></p>
         </div>
       </div>
 
@@ -350,7 +266,120 @@
       </div>
     </section>
 
-    <!-- SECTION 3: BULK ISSUER & CSV UPLOADER -->
+    <!-- SECTION 2: STAFF DASHBOARD VIEW -->
+    <section id="dashboard-tab" class="tab-pane">
+      <div class="pane-header">
+        <div>
+          <h2>Certificate Analytics & Master Ledger</h2>
+          <p class="section-desc">Overview of university-wide certificate lifecycle, tamper verification metrics, and Merkle root anchoring.</p>
+        </div>
+        <div class="header-btns">
+          <button class="btn btn-secondary" id="refresh-data-btn">
+            <i data-feather="refresh-cw"></i> Refresh Ledger
+          </button>
+          <button class="btn btn-primary" id="dashboard-issue-btn">
+            <i data-feather="plus"></i> Issue New Certificates
+          </button>
+        </div>
+      </div>
+
+      <!-- METRICS GRID -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon blue">
+            <i data-feather="award"></i>
+          </div>
+          <div class="metric-info">
+            <span class="metric-label">Total Certificates</span>
+            <h3 class="metric-value" id="metric-total-certs">0</h3>
+            <span class="metric-sub text-success">Google Workspace Ledger</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon green">
+            <i data-feather="shield"></i>
+          </div>
+          <div class="metric-info">
+            <span class="metric-label">Approved / Verified</span>
+            <h3 class="metric-value" id="metric-verified-count">0</h3>
+            <span class="metric-sub">SHA-256 Digest Matched</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon yellow">
+            <i data-feather="clock"></i>
+          </div>
+          <div class="metric-info">
+            <span class="metric-label">Pending Approval</span>
+            <h3 class="metric-value" id="metric-pending-count">0</h3>
+            <span class="metric-sub text-warning">Awaiting Authority Sign-off</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon red">
+            <i data-feather="alert-triangle"></i>
+          </div>
+          <div class="metric-info">
+            <span class="metric-label">Revoked Certificates</span>
+            <h3 class="metric-value" id="metric-revoked-count">0</h3>
+            <span class="metric-sub text-danger">Blacklisted in Ledger</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECENT CERTIFICATES LEDGER TABLE -->
+      <div class="card table-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h3>Master Certificate Ledger</h3>
+            <span class="badge" id="ledger-total-badge">0 Certificates</span>
+          </div>
+          <div class="table-filters">
+            <div class="search-box">
+              <i data-feather="search"></i>
+              <input type="text" id="ledger-search-input" placeholder="Search by Student Name, Roll No, or Cert ID...">
+            </div>
+            <select id="school-filter-select" class="form-select">
+              <option value="ALL">All Schools (USICT, USMS, USLLS...)</option>
+              <option value="USICT">USICT</option>
+              <option value="USMS">USMS</option>
+              <option value="USLLS">USLLS</option>
+              <option value="USCT">USCT</option>
+            </select>
+            <select id="status-filter-select" class="form-select">
+              <option value="ALL">All Statuses</option>
+              <option value="Approved">Approved</option>
+              <option value="Pending">Pending</option>
+              <option value="Revoked">Revoked</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="master-ledger-table">
+            <thead>
+              <tr>
+                <th>Cert ID</th>
+                <th>Student Details</th>
+                <th>School & Course</th>
+                <th>Event / Achievement</th>
+                <th>Issue Date</th>
+                <th>Status</th>
+                <th>SHA-256 Cryptographic Hash</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-table-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: BULK ISSUER & CSV UPLOADER (Admin, Issuer) -->
     <section id="issuer-tab" class="tab-pane">
       <div class="pane-header">
         <div>
@@ -366,11 +395,11 @@
 
       <div class="card">
         <h3>Step 1: Upload CSV or Paste Records</h3>
-        <div class="issuer-grid">
+        <div class="issuer-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:14px;">
           <div class="dropzone" id="csv-dropzone">
             <i data-feather="file-text" class="dropzone-icon"></i>
             <p>Drag & drop <code>students.csv</code> file here</p>
-            <label for="csv-file-input" class="btn btn-secondary">Browse CSV</label>
+            <label for="csv-file-input" class="btn btn-secondary" style="margin-top:10px;">Browse CSV</label>
             <input type="file" id="csv-file-input" accept=".csv" style="display:none;">
           </div>
           <div class="csv-paste-box">
@@ -405,14 +434,13 @@
               </tr>
             </thead>
             <tbody id="csv-preview-tbody">
-              <!-- Rendered dynamically -->
             </tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- SECTION 4: APPROVAL QUEUE -->
+    <!-- SECTION 4: APPROVAL QUEUE (Admin, Approver) -->
     <section id="approval-tab" class="tab-pane">
       <div class="pane-header">
         <div>
@@ -424,9 +452,14 @@
       <div class="card">
         <div class="card-header">
           <h3>Pending Certificates Awaiting Approval</h3>
-          <button class="btn btn-primary" id="approve-all-selected-btn">
-            <i data-feather="check-circle"></i> Approve Selected Batch
-          </button>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-primary" id="approve-all-selected-btn">
+              <i data-feather="check-circle"></i> Approve Selected Batch
+            </button>
+            <button class="btn btn-warning" id="send-emails-btn" title="Send email notifications with PDF links to approved students">
+              <i data-feather="mail"></i> Email Approved Certificates
+            </button>
+          </div>
         </div>
 
         <div class="table-responsive">
@@ -444,7 +477,6 @@
               </tr>
             </thead>
             <tbody id="approval-queue-tbody">
-              <!-- Rendered dynamically -->
             </tbody>
           </table>
         </div>
@@ -458,13 +490,13 @@
           </div>
           <div class="sig-btns">
             <button class="btn btn-secondary btn-sm" id="clear-sig-btn">Clear Signature</button>
-            <span class="sig-note">Signing as: <strong>Prof. Dean Students' Welfare (DSW)</strong></span>
+            <span class="sig-note">Authorized Signature & Sign-off</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- SECTION 5: CERTIFICATE CANVAS DESIGNER -->
+    <!-- SECTION 5: CERTIFICATE CANVAS DESIGNER (Admin, Issuer) -->
     <section id="template-tab" class="tab-pane">
       <div class="pane-header">
         <div>
@@ -477,7 +509,6 @@
       </div>
 
       <div class="designer-grid">
-        <!-- CONTROLS -->
         <div class="card controls-card">
           <h3>Template Controls</h3>
           <div class="form-group">
@@ -502,7 +533,6 @@
           </div>
         </div>
 
-        <!-- CANVAS PREVIEW -->
         <div class="card canvas-card">
           <div class="canvas-wrapper">
             <canvas id="cert-canvas" width="842" height="595"></canvas>
@@ -511,7 +541,7 @@
       </div>
     </section>
 
-    <!-- SECTION 6: AUDIT LOGS & REVOCATION -->
+    <!-- SECTION 6: AUDIT LOGS (Admin, Approver, Viewer) -->
     <section id="audit-tab" class="tab-pane">
       <div class="pane-header">
         <div>
@@ -540,7 +570,42 @@
               </tr>
             </thead>
             <tbody id="audit-log-tbody">
-              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: STAFF USERS MANAGEMENT (Admin only) -->
+    <section id="users-tab" class="tab-pane">
+      <div class="pane-header">
+        <div>
+          <h2>Staff Directory & Role Assignments</h2>
+          <p class="section-desc">Manage university staff members, assign workflow roles (Admin, Approver, Issuer, Viewer), and coordinate certificate issuance.</p>
+        </div>
+        <button class="btn btn-primary" id="open-add-user-modal-btn">
+          <i data-feather="user-plus"></i> Add New Staff Member
+        </button>
+      </div>
+
+      <div class="card table-card">
+        <div class="card-header">
+          <h3>Authorized Staff Members (<code>NeonDB PostgreSQL</code>)</h3>
+          <span class="badge badge-valid" id="users-count-badge">0 Staff Members</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Staff Name</th>
+                <th>Email Address</th>
+                <th>Assigned Role</th>
+                <th>Account Status</th>
+                <th>Date Added</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body">
             </tbody>
           </table>
         </div>
@@ -548,6 +613,46 @@
     </section>
 
   </main>
+
+  <!-- STAFF AUTHENTICATION MODAL -->
+  <div class="modal-overlay" id="staff-auth-modal" style="display:none;">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3><i data-feather="lock"></i> Staff Portal Sign In</h3>
+        <button class="modal-close" id="close-auth-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.875rem; color:var(--text-muted); margin-bottom:16px;">
+          Enter your staff email and password to authenticate against the NeonDB database.
+        </p>
+
+        <form id="staff-login-form" onsubmit="event.preventDefault();">
+          <div class="form-group">
+            <label class="form-label" for="auth-email-input">Email Address:</label>
+            <input type="email" id="auth-email-input" class="form-control" placeholder="e.g., yourname@ipu.ac.in" required autocomplete="email">
+          </div>
+
+          <div class="form-group" style="margin-top:14px;">
+            <label class="form-label" for="auth-password-input">Password:</label>
+            <div class="password-input-group">
+              <input type="password" id="auth-password-input" class="form-control" placeholder="Enter your password" required autocomplete="current-password">
+              <button type="button" class="password-toggle-btn" id="toggle-auth-password" aria-label="Show password" title="Show password">
+                <i data-feather="eye" id="toggle-auth-password-icon"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="auth-error-msg" style="display:none; color:var(--danger, #ef4444); font-size:0.875rem; margin-top:14px; padding:10px 14px; background:rgba(239, 68, 68, 0.1); border-radius:6px; border:1px solid rgba(239, 68, 68, 0.25);"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancel-auth-modal-btn">Cancel</button>
+        <button class="btn btn-primary" id="confirm-auth-btn" form="staff-login-form" type="submit">
+          <i data-feather="log-in"></i> Sign In
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- REVOCATION MODAL -->
   <div class="modal-overlay" id="revocation-modal" style="display:none;">
@@ -571,11 +676,60 @@
     </div>
   </div>
 
+  <!-- ADD / EDIT STAFF USER MODAL -->
+  <div class="modal-overlay" id="user-modal" style="display:none;">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 id="user-modal-title"><i data-feather="user-plus"></i> Add New Staff Member</h3>
+        <button class="modal-close" id="close-user-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="user-edit-id" value="">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label" for="user-name-input">Full Name:</label>
+          <input type="text" id="user-name-input" class="form-control" placeholder="e.g. Dr. Ramesh Kumar" required>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label" for="user-email-input">Email Address:</label>
+          <input type="email" id="user-email-input" class="form-control" placeholder="e.g. ramesh@ipu.ac.in" required>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label" for="user-password-input">Password <span id="user-password-optional-label" style="font-weight:normal; font-size:0.75rem; color:var(--text-muted);">(Leave blank to keep current password when editing)</span>:</label>
+          <div class="password-input-group">
+            <input type="password" id="user-password-input" class="form-control" placeholder="Enter password for NeonDB">
+            <button type="button" class="password-toggle-btn" id="toggle-user-password" aria-label="Show password" title="Show password">
+              <i data-feather="eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label" for="user-role-select">Assigned Role:</label>
+          <select id="user-role-select" class="form-select">
+            <option value="ADMIN">Admin (Full Access & Configuration)</option>
+            <option value="APPROVER">Approver (Dashboard, Approvals & Revocation)</option>
+            <option value="ISSUER">Issuer (Dashboard, Bulk Issuer & Certificate Designer)</option>
+            <option value="VIEWER">Viewer (Dashboard & Audit Logs read-only)</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+          <input type="checkbox" id="user-active-checkbox" checked style="width:16px; height:16px; cursor:pointer;">
+          <label for="user-active-checkbox" style="font-size:0.85rem; font-weight:600; cursor:pointer; margin:0;">Active Account (Can log in to portal)</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancel-user-modal-btn">Cancel</button>
+        <button class="btn btn-primary" id="save-user-btn">
+          <i data-feather="save"></i> Save to NeonDB
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- API CONFIGURATION MODAL -->
   <div class="modal-overlay" id="api-config-modal" style="display:none;">
     <div class="modal-card">
       <div class="modal-header">
-        <h3><i data-feather="key"></i> API & Backend Configuration</h3>
+        <h3><i data-feather="settings"></i> API & Backend Configuration</h3>
         <button class="modal-close" id="close-api-config-modal-btn">&times;</button>
       </div>
       <div class="modal-body">
@@ -585,12 +739,14 @@
           <input type="text" id="gas-url-input" class="form-control" placeholder="https://script.google.com/macros/s/.../exec">
         </div>
         <div class="form-group" style="margin-bottom:14px;">
-          <label class="form-label" for="api-key-input">Admin API Key (Required for Issuing/Approving/Revoking):</label>
-          <input type="password" id="api-key-input" class="form-control" placeholder="Enter configured ADMIN_API_KEY">
+          <label class="form-label" for="api-key-input">Admin API Key (Optional for External REST API calls):</label>
+          <div class="password-input-group">
+            <input type="password" id="api-key-input" class="form-control" placeholder="Enter configured ADMIN_API_KEY">
+            <button type="button" class="password-toggle-btn" id="toggle-api-key" aria-label="Show API key" title="Show API key">
+              <i data-feather="eye" id="toggle-api-key-icon"></i>
+            </button>
+          </div>
         </div>
-        <p style="font-size:0.75rem; color:var(--text-muted);">
-          * When URL is empty, the application runs in high-fidelity <strong>Local Simulation Mode</strong> with full state-machine guards and WebCrypto hashing.
-        </p>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" id="cancel-api-config-btn">Cancel</button>
