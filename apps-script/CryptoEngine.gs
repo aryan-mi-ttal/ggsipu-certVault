@@ -10,11 +10,34 @@ var CryptoEngine = {
    */
   generateCertificateHash: function(record) {
     if (!record) return "";
-    var certId = String(record.CertID || "").trim();
-    var rollNo = String(record.RollNumber || record.RollNo || "").trim();
-    var name = String(record.StudentName || record.Name || "").trim().toUpperCase();
-    var event = String(record.EventName || record.Event || "").trim();
-    var date = String(record.IssueDate || "").trim();
+    var certId = String(record.CertID || record.cert_id || "").trim();
+    var rollNo = String(record.RollNumber || record.RollNo || record.roll_number || "").trim();
+    var name = String(record.StudentName || record.Name || record.name || "").trim().toUpperCase();
+    var event = String(record.EventName || record.Event || record.event_name || "").trim();
+    
+    var rawDate = record.IssueDate || record.issue_date || record.Date || "";
+    var date = "";
+    if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+      var y = rawDate.getFullYear();
+      var m = ("0" + (rawDate.getMonth() + 1)).slice(-2);
+      var d = ("0" + rawDate.getDate()).slice(-2);
+      date = y + "-" + m + "-" + d;
+    } else {
+      var str = String(rawDate || "").trim();
+      if (str.indexOf("T") !== -1) {
+        str = str.split("T")[0];
+      }
+      var ddmmyyyy = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+      if (ddmmyyyy) {
+        var day = ("0" + ddmmyyyy[1]).slice(-2);
+        var mon = ("0" + ddmmyyyy[2]).slice(-2);
+        var yr = ddmmyyyy[3];
+        date = yr + "-" + mon + "-" + day;
+      } else {
+        date = str;
+      }
+    }
+
     var salt = (typeof CONFIG !== "undefined" && CONFIG.DEFAULT_SALT) ? CONFIG.DEFAULT_SALT : "GGSIPU_SALT_2026_DSW_SECURE_HASH";
 
     // Standardized canonical payload format for deterministic hash immutability

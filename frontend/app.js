@@ -44,7 +44,7 @@ let mockLedger = [
     EventName: "Smart India Hackathon 2026 Internal Round",
     IssueDate: "2026-08-15",
     Status: "Approved",
-    SHA256Hash: "6c2e35327ecad8b417ef2f205c0888dfae8e97a389fc781ea32a39281a8f94d0",
+    SHA256Hash: "b8517110f20d110279ead3bfe6547240d6f5578cd200a357f1fe25be446c294a",
     MerkleRoot: "8f2d4e910a11b12c13d14e15f16a17b18c19d20e21f22a23b24c25d26e27f28a",
     DrivePdfUrl: "https://drive.google.com/file/d/mock_1001/view",
     QrVerificationUrl: "https://ggsipu.ac.in/verify?certId=GGSIPU-2026-DSW-1001",
@@ -61,7 +61,7 @@ let mockLedger = [
     EventName: "Annual Cybersecurity & Cryptography Workshop 2026",
     IssueDate: "2026-08-15",
     Status: "Approved",
-    SHA256Hash: "e5a7b1c3d9e0f2a4b6c8d0e1f3a5b7c9d1e3f5a7b9c1d3e5f7a9b1c3d5e7f9a1",
+    SHA256Hash: "790893ed72c77ec9f9f04d07a16b20890fc7a946fd5b6b2e17ef2ff1c7e2afa9",
     MerkleRoot: "8f2d4e910a11b12c13d14e15f16a17b18c19d20e21f22a23b24c25d26e27f28a",
     DrivePdfUrl: "https://drive.google.com/file/d/mock_1002/view",
     QrVerificationUrl: "https://ggsipu.ac.in/verify?certId=GGSIPU-2026-DSW-1002",
@@ -78,7 +78,7 @@ let mockLedger = [
     EventName: "Industrial Internship & Leadership Training",
     IssueDate: "2026-08-14",
     Status: "Pending",
-    SHA256Hash: "b7c8d9e0f1a234567890abcdef1234567890abcdef1234567890abcdef123456",
+    SHA256Hash: "1c819c0512900d517c7f841a30679cb211b3f2b1703e8c50cebdcda76cad3019",
     MerkleRoot: "7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a234567890abcde",
     DrivePdfUrl: "https://drive.google.com/file/d/mock_1003/view",
     QrVerificationUrl: "https://ggsipu.ac.in/verify?certId=GGSIPU-2026-DSW-1003",
@@ -95,7 +95,7 @@ let mockLedger = [
     EventName: "National Moot Court Competition 2026",
     IssueDate: "2026-08-10",
     Status: "Pending",
-    SHA256Hash: "c9d0e1f2a3b45678901234567890abcdef1234567890abcdef1234567890abcd",
+    SHA256Hash: "f296a9c6e60857390be48dbd4171d4e85b5e0386e910337c9203715eefc48745",
     MerkleRoot: "7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a234567890abcde",
     DrivePdfUrl: "https://drive.google.com/file/d/mock_1004/view",
     QrVerificationUrl: "https://ggsipu.ac.in/verify?certId=GGSIPU-2026-DSW-1004",
@@ -112,7 +112,7 @@ let mockLedger = [
     EventName: "Green Energy & Tech Symposium",
     IssueDate: "2026-08-10",
     Status: "Revoked",
-    SHA256Hash: "d0e1f2a3b4c5678901234567890abcdef1234567890abcdef1234567890abcde",
+    SHA256Hash: "507abfb32b2c58199bcb5ba796054c5cf94606683ff50428b019bbf765dffbdb",
     MerkleRoot: "6b7c8d9e0f1a234567890abcdef1234567890abcdef1234567890abcdef1234",
     DrivePdfUrl: "https://drive.google.com/file/d/mock_1005/view",
     QrVerificationUrl: "https://ggsipu.ac.in/verify?certId=GGSIPU-2026-DSW-1005",
@@ -160,14 +160,40 @@ async function computeSha256(text) {
 }
 
 /**
+ * Normalizes date to standard YYYY-MM-DD
+ */
+function normalizeDate(rawDate) {
+  if (!rawDate) return new Date().toISOString().split("T")[0];
+  if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+    const y = rawDate.getFullYear();
+    const m = String(rawDate.getMonth() + 1).padStart(2, "0");
+    const d = String(rawDate.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  const str = String(rawDate).trim();
+  if (str.includes("T")) {
+    return str.split("T")[0];
+  }
+  const ddmmyyyy = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (ddmmyyyy) {
+    const day = ddmmyyyy[1].padStart(2, "0");
+    const month = ddmmyyyy[2].padStart(2, "0");
+    const year = ddmmyyyy[3];
+    return `${year}-${month}-${day}`;
+  }
+  return str;
+}
+
+/**
  * Canonical SHA-256 hash
  */
 async function computeCertificateRecordHash(record) {
-  const certId = String(record.CertID || "").trim();
-  const rollNo = String(record.RollNumber || record.RollNo || "").trim();
-  const name = String(record.StudentName || record.Name || "").trim().toUpperCase();
-  const event = String(record.EventName || record.Event || "").trim();
-  const date = String(record.IssueDate || "").trim();
+  if (!record) return "";
+  const certId = String(record.CertID || record.cert_id || "").trim();
+  const rollNo = String(record.RollNumber || record.RollNo || record.roll_number || record.roll_no || "").trim();
+  const name = String(record.StudentName || record.Name || record.name || record.student_name || "").trim().toUpperCase();
+  const event = String(record.EventName || record.Event || record.event_name || record.event || "").trim();
+  const date = normalizeDate(record.IssueDate || record.issue_date || record.Date || "");
   const salt = DEFAULT_SALT;
 
   const payload = [
@@ -695,31 +721,46 @@ async function executeVerificationById(certId) {
     return;
   }
 
-  showToast("Verifying Certificate ID: " + certId + "...");
+  const cleanCertId = certId.trim();
+  showToast("Verifying Certificate ID: " + cleanCertId + "...");
 
+  // 1. Try Backend API (NeonDB database)
+  try {
+    const res = await fetch(`${BACKEND_API_BASE}/api/certificates/verify/${encodeURIComponent(cleanCertId)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === "found" && data.certificate) {
+        renderVerificationResult(data.certificate, cleanCertId, data.integrityCheck);
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn("Backend verification endpoint check skipped/failed, trying next source:", err);
+  }
+
+  // 2. Try Google Apps Script if configured
   if (GAS_API_URL) {
     try {
-      const response = await fetch(`${GAS_API_URL}?action=verifyId&certId=${encodeURIComponent(certId)}`);
+      const response = await fetch(`${GAS_API_URL}?action=verifyId&certId=${encodeURIComponent(cleanCertId)}`);
       const data = await response.json();
-      if (data.status === "found") {
-        renderVerificationResult(data.certificate, certId, data.integrityCheck);
-        return;
-      } else {
-        renderVerificationResult(null, certId, "NOT_FOUND");
+      if (data.status === "found" && data.certificate) {
+        renderVerificationResult(data.certificate, cleanCertId, data.integrityCheck);
         return;
       }
     } catch (err) {
-      console.warn("Backend verification error, checking local ledger:", err);
+      console.warn("Google Apps Script verification error, checking local ledger:", err);
     }
   }
 
-  const found = mockLedger.find(c => (c.CertID || "").trim().toLowerCase() === certId.trim().toLowerCase());
+  // 3. Fallback to in-memory ledger
+  const found = mockLedger.find(c => (c.CertID || c.cert_id || "").trim().toLowerCase() === cleanCertId.toLowerCase());
   if (found) {
     const recomputedHash = await computeCertificateRecordHash(found);
-    const isUntampered = (recomputedHash.toLowerCase() === (found.SHA256Hash || "").toLowerCase());
-    renderVerificationResult(found, certId, isUntampered ? "PASSED" : "FAILED_TAMPERED");
+    const storedHash = (found.SHA256Hash || found.hash || "").trim();
+    const isUntampered = (recomputedHash.toLowerCase() === storedHash.toLowerCase());
+    renderVerificationResult(found, cleanCertId, isUntampered ? "PASSED" : "FAILED_TAMPERED");
   } else {
-    renderVerificationResult(null, certId, "NOT_FOUND");
+    renderVerificationResult(null, cleanCertId, "NOT_FOUND");
   }
 }
 
@@ -751,79 +792,66 @@ function renderVerificationResult(record, queryId, integrityStatus = "PASSED") {
     document.getElementById("res-integrity").className = "d-value text-danger";
     document.getElementById("res-sha256").textContent = "N/A";
     document.getElementById("res-merkle").textContent = "N/A";
-  } else if (integrityStatus === "FAILED_TAMPERED") {
+    feather.replace();
+    return;
+  }
+
+  // Extract normalized fields
+  const certIdVal = record.CertID || record.cert_id || queryId;
+  const nameVal = record.StudentName || record.name || record.Name || "Recipient Name";
+  const rollVal = record.RollNumber || record.roll_number || record.RollNo || "N/A";
+  const schoolVal = record.School || record.school || record.course || record.Course || "USICT";
+  const eventVal = record.EventName || record.event_name || record.Event || "University Event";
+  const dateVal = normalizeDate(record.IssueDate || record.issue_date || record.Date || "");
+  const rawStatus = String(record.Status || record.status || "Approved").toLowerCase();
+  const approvedByVal = record.ApprovedBy || record.approved_by || (rawStatus === 'approved' ? "Dean DSW (Authorized)" : "Awaiting Approval");
+  const hashVal = record.SHA256Hash || record.hash || "N/A";
+  const merkleVal = record.MerkleRoot || record.merkle_root || "8f2d4e910a11b12c13d14e15f16a17b18c19d20e21f22a23b24c25d26e27f28a";
+  const pdfUrlVal = record.DrivePdfUrl || record.pdf_url || "#";
+
+  document.getElementById("res-cert-id").textContent = certIdVal;
+  document.getElementById("res-student-name").textContent = nameVal;
+  document.getElementById("res-roll-no").textContent = rollVal;
+  document.getElementById("res-school").textContent = schoolVal;
+  document.getElementById("res-event").textContent = eventVal;
+  document.getElementById("res-issue-date").textContent = dateVal;
+  document.getElementById("res-approved-by").textContent = approvedByVal;
+  document.getElementById("res-sha256").textContent = hashVal;
+  document.getElementById("res-merkle").textContent = merkleVal;
+
+  const driveLink = document.getElementById("res-drive-link");
+  if (driveLink) {
+    driveLink.href = pdfUrlVal;
+  }
+
+  if (integrityStatus === "FAILED_TAMPERED") {
     header.className = "verification-badge-header revoked";
     icon.setAttribute("data-feather", "alert-triangle");
     title.textContent = "TAMPER ALERT: INTEGRITY CHECK FAILED";
     subtitle.textContent = "Record metadata in ledger does not match cryptographic SHA-256 seal!";
-
-    document.getElementById("res-cert-id").textContent = record.CertID;
-    document.getElementById("res-student-name").textContent = record.StudentName;
-    document.getElementById("res-roll-no").textContent = record.RollNumber;
-    document.getElementById("res-school").textContent = record.School;
-    document.getElementById("res-event").textContent = record.EventName;
-    document.getElementById("res-issue-date").textContent = record.IssueDate;
-    document.getElementById("res-approved-by").textContent = record.ApprovedBy || "N/A";
     document.getElementById("res-integrity").textContent = "TAMPERED / MISMATCH";
     document.getElementById("res-integrity").className = "d-value text-danger";
-    document.getElementById("res-sha256").textContent = record.SHA256Hash;
-    document.getElementById("res-merkle").textContent = record.MerkleRoot;
-  } else if (record.Status === "Revoked") {
+  } else if (rawStatus === "revoked") {
     header.className = "verification-badge-header revoked";
     icon.setAttribute("data-feather", "slash");
     title.textContent = "CERTIFICATE FORMALLY REVOKED";
     subtitle.textContent = "This certificate was formally revoked by GGSIPU Competent Authority";
-
-    document.getElementById("res-cert-id").textContent = record.CertID;
-    document.getElementById("res-student-name").textContent = record.StudentName;
-    document.getElementById("res-roll-no").textContent = record.RollNumber;
-    document.getElementById("res-school").textContent = record.School;
-    document.getElementById("res-event").textContent = record.EventName;
-    document.getElementById("res-issue-date").textContent = record.IssueDate;
-    document.getElementById("res-approved-by").textContent = record.ApprovedBy || "Dean DSW";
     document.getElementById("res-integrity").textContent = "INVALID (REVOKED)";
     document.getElementById("res-integrity").className = "d-value text-danger";
-    document.getElementById("res-sha256").textContent = record.SHA256Hash;
-    document.getElementById("res-merkle").textContent = record.MerkleRoot;
-  } else if (record.Status === "Pending") {
+  } else if (rawStatus === "pending") {
     header.className = "verification-badge-header revoked";
     icon.setAttribute("data-feather", "clock");
     title.textContent = "CERTIFICATE PENDING APPROVAL";
     subtitle.textContent = "This certificate has been generated but is awaiting Competent Authority signature";
-
-    document.getElementById("res-cert-id").textContent = record.CertID;
-    document.getElementById("res-student-name").textContent = record.StudentName;
-    document.getElementById("res-roll-no").textContent = record.RollNumber;
-    document.getElementById("res-school").textContent = record.School;
-    document.getElementById("res-event").textContent = record.EventName;
-    document.getElementById("res-issue-date").textContent = record.IssueDate;
-    document.getElementById("res-approved-by").textContent = "Awaiting Approval";
     document.getElementById("res-integrity").textContent = "PENDING SIGN-OFF";
     document.getElementById("res-integrity").className = "d-value text-warning";
-    document.getElementById("res-sha256").textContent = record.SHA256Hash;
-    document.getElementById("res-merkle").textContent = record.MerkleRoot;
   } else {
     header.className = "verification-badge-header valid";
     icon.setAttribute("data-feather", "check-circle");
     title.textContent = "CERTIFICATE VERIFIED & AUTHENTIC";
-    subtitle.textContent = "Cryptographic SHA-256 Hash Matched Google Workspace Blockchain Ledger";
-
-    document.getElementById("res-cert-id").textContent = record.CertID;
-    document.getElementById("res-student-name").textContent = record.StudentName;
-    document.getElementById("res-roll-no").textContent = record.RollNumber;
-    document.getElementById("res-school").textContent = record.School;
-    document.getElementById("res-event").textContent = record.EventName;
-    document.getElementById("res-issue-date").textContent = record.IssueDate;
-    document.getElementById("res-approved-by").textContent = record.ApprovedBy || "Dean DSW";
+    subtitle.textContent = "Cryptographic SHA-256 Hash Matched GGSIPU Ledger";
     document.getElementById("res-integrity").textContent = "100% UNTAMPERED";
     document.getElementById("res-integrity").className = "d-value text-success";
-    document.getElementById("res-sha256").textContent = record.SHA256Hash;
-    document.getElementById("res-merkle").textContent = record.MerkleRoot;
-    
-    const driveLink = document.getElementById("res-drive-link");
-    if (driveLink) {
-      driveLink.href = record.DrivePdfUrl || "#";
-    }
   }
 
   feather.replace();
@@ -890,12 +918,27 @@ async function processPdfFile(file) {
     codeElem.textContent = hexHash;
     showToast("Document SHA-256 Hash computed successfully!");
 
+    // 1. Try Backend API (NeonDB)
+    try {
+      const res = await fetch(`${BACKEND_API_BASE}/api/certificates/verify-hash/${encodeURIComponent(hexHash)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === "found" && data.certificate) {
+          renderVerificationResult(data.certificate, data.certificate.CertID || hexHash, data.integrityCheck);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Backend hash verification unreachable, falling back:", err);
+    }
+
+    // 2. Try Google Apps Script
     if (GAS_API_URL) {
       try {
         const response = await fetch(`${GAS_API_URL}?action=verifyHash&hash=${encodeURIComponent(hexHash)}`);
         const data = await response.json();
-        if (data.status === "found") {
-          renderVerificationResult(data.certificate, data.certificate.CertID, data.integrityCheck);
+        if (data.status === "found" && data.certificate) {
+          renderVerificationResult(data.certificate, data.certificate.CertID || hexHash, data.integrityCheck);
           return;
         }
       } catch (err) {
@@ -903,9 +946,10 @@ async function processPdfFile(file) {
       }
     }
 
-    const found = mockLedger.find(c => (c.SHA256Hash || "").toLowerCase() === hexHash.toLowerCase());
+    // 3. Fallback to mockLedger
+    const found = mockLedger.find(c => (c.SHA256Hash || c.hash || "").toLowerCase() === hexHash.toLowerCase());
     if (found) {
-      renderVerificationResult(found, found.CertID, "PASSED");
+      renderVerificationResult(found, found.CertID || found.cert_id, "PASSED");
     } else {
       renderVerificationResult(null, "Uploaded File", "NOT_FOUND");
     }
@@ -1090,13 +1134,13 @@ async function parseCsvString(csvText) {
     });
 
     const studentName = obj.StudentName || obj.Name || obj.student_name || obj.name || "Student Recipient";
-    const rollNo = obj.RollNumber || obj.RollNo || obj.roll_number || obj.roll_no || obj.CertID || `012164032${i}`;
+    const rollNo = obj.RollNumber || obj.RollNo || obj.roll_number || obj.roll_no || `012164032${i}`;
     const email = obj.Email || obj.email || `${studentName.toLowerCase().replace(/\s+/g, '.')}@ggsipu.edu`;
     const school = obj.School || obj.Department || obj.school || obj.department || "USICT";
     const course = obj.Course || obj.course || obj.Branch || obj.branch || "B.Tech CSE";
     const eventName = obj.EventName || obj.Event || obj.event_name || obj.event || "Smart India Hackathon 2026";
     const certType = obj.CertificateType || obj.cert_type || obj.certificate_type || obj.Status || "Participation";
-    const issueDate = obj.IssueDate || obj.issue_date || new Date().toISOString().split("T")[0];
+    const issueDate = normalizeDate(obj.IssueDate || obj.issue_date || obj.Date || "");
 
     const certId = obj.CertID && !existingIdsSet.has(obj.CertID.toUpperCase())
       ? obj.CertID.toUpperCase()
@@ -2072,14 +2116,14 @@ async function fetchRemoteLedger() {
           Course: c.course || "GGSIPU",
           EventName: c.event_name,
           CertificateType: c.cert_type || "Participation",
-          IssueDate: c.issue_date ? String(c.issue_date).substring(0, 10) : new Date().toISOString().split("T")[0],
+          IssueDate: normalizeDate(c.issue_date),
           Status: (c.status || "Pending").charAt(0).toUpperCase() + (c.status || "Pending").slice(1).toLowerCase(),
           SHA256Hash: c.hash,
           MerkleRoot: "8f2d4e910a11b12c13d14e15f16a17b18c19d20e21f22a23b24c25d26e27f28a",
           DrivePdfUrl: c.pdf_url || `https://drive.google.com/file/d/mock_${c.cert_id}/view`,
           QrVerificationUrl: `https://ggsipu.ac.in/verify?certId=${encodeURIComponent(c.cert_id)}`,
           ApprovedBy: String(c.status).toLowerCase() === 'approved' ? "Dean DSW (Authorized)" : "",
-          ApprovalDate: c.issue_date ? String(c.issue_date).substring(0, 10) : ""
+          ApprovalDate: c.issue_date ? normalizeDate(c.issue_date) : ""
         }));
         renderMasterLedger();
         renderMetrics();

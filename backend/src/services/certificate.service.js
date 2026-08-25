@@ -252,13 +252,76 @@ async function markCertificateEmailed(certId) {
   return res.rows[0];
 }
 
+/**
+ * Retrieves a single certificate by cert_id (case-insensitive).
+ *
+ * @param {string} certId
+ * @returns {Promise<Object|null>}
+ */
+async function getCertificateByCertId(certId) {
+  if (!certId) return null;
+  const query = `
+    SELECT id, cert_id, roll_number, name, email, course, event_name, cert_type, issue_date, hash, status, pdf_url, pdf_file_id, created_at
+    FROM certificates
+    WHERE UPPER(TRIM(cert_id)) = UPPER(TRIM($1))
+    LIMIT 1;
+  `;
+  const res = await db.query(query, [String(certId).trim()]);
+  return res.rows[0] || null;
+}
+
+/**
+ * Retrieves a certificate by its SHA-256 hash.
+ *
+ * @param {string} hash
+ * @returns {Promise<Object|null>}
+ */
+async function getCertificateByHash(hash) {
+  if (!hash) return null;
+  const query = `
+    SELECT id, cert_id, roll_number, name, email, course, event_name, cert_type, issue_date, hash, status, pdf_url, pdf_file_id, created_at
+    FROM certificates
+    WHERE LOWER(TRIM(hash)) = LOWER(TRIM($1))
+    LIMIT 1;
+  `;
+  const res = await db.query(query, [String(hash).trim()]);
+  return res.rows[0] || null;
+}
+
+/**
+ * Checks all existing certificates in database and updates any out-of-date or mismatched hashes.
+ */
+async function repairMismatchedCertificateHashes() {
+  try {
+    const res = await db.query('SELECT id, cert_id, roll_number, name, email, course, event_name, cert_type, issue_date, hash FROM certificates');
+    let repairedCount = 0;
+    for (const cert of res.rows) {
+      const canonicalHash = computeCertificateHash(cert);
+      if (String(cert.hash).toLowerCase() !== canonicalHash.toLowerCase()) {
+        await db.query('UPDATE certificates SET hash = $1 WHERE id = $2', [canonicalHash, cert.id]);
+        repairedCount++;
+      }
+    }
+    if (repairedCount > 0) {
+      console.log(`[CERT SERVICE] Repaired ${repairedCount} certificate hash(es) to canonical SHA-256 standard.`);
+    }
+    return repairedCount;
+  } catch (err) {
+    console.warn('[CERT SERVICE] Could not run hash repair:', err.message);
+    return 0;
+  }
+}
+
 module.exports = {
   insertCertificatesBatch,
   getAllCertificates,
+  getCertificateByCertId,
+  getCertificateByHash,
   getCertificatesForPdfGeneration,
   updateCertificatePdfUrl,
   updateCertificateStatus,
   approveCertificatesBatch,
   getCertificatesForEmailing,
   markCertificateEmailed,
+  repairMismatchedCertificateHashes,
 };

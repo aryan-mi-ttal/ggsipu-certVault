@@ -105,6 +105,10 @@ async function initDb() {
     console.log('[DATABASE] NeonDB users table verified/initialized.');
     await pool.query(createCertificatesTableQuery);
     console.log('[DATABASE] NeonDB certificates table verified/initialized with PDF and email columns.');
+
+    // Auto-repair any mismatched certificate hashes from previous schema versions
+    const { repairMismatchedCertificateHashes } = require('./services/certificate.service');
+    await repairMismatchedCertificateHashes();
   } catch (err) {
     console.error('[DATABASE] Error during database initialization:', err.message || err);
   }

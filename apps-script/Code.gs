@@ -614,7 +614,14 @@ function verifyCertificateById(certId) {
       var row = data[i];
       var record = {};
       for (var j = 0; j < headers.length; j++) {
-        record[headers[j]] = row[j];
+        var val = row[j];
+        if (val instanceof Date && !isNaN(val.getTime())) {
+          var y = val.getFullYear();
+          var m = ("0" + (val.getMonth() + 1)).slice(-2);
+          var d = ("0" + val.getDate()).slice(-2);
+          val = y + "-" + m + "-" + d;
+        }
+        record[headers[j]] = val;
       }
       
       var computedHash = CryptoEngine.generateCertificateHash(record);
@@ -653,7 +660,14 @@ function verifyCertificateByHash(hash) {
       var row = data[i];
       var record = {};
       for (var j = 0; j < headers.length; j++) {
-        record[headers[j]] = row[j];
+        var val = row[j];
+        if (val instanceof Date && !isNaN(val.getTime())) {
+          var y = val.getFullYear();
+          var m = ("0" + (val.getMonth() + 1)).slice(-2);
+          var d = ("0" + val.getDate()).slice(-2);
+          val = y + "-" + m + "-" + d;
+        }
+        record[headers[j]] = val;
       }
 
       var computedHash = CryptoEngine.generateCertificateHash(record);
@@ -686,7 +700,14 @@ function getAllCertificates() {
   for (var i = 1; i < data.length; i++) {
     var item = {};
     for (var j = 0; j < headers.length; j++) {
-      item[headers[j]] = data[i][j];
+      var val = data[i][j];
+      if (val instanceof Date && !isNaN(val.getTime())) {
+        var y = val.getFullYear();
+        var m = ("0" + (val.getMonth() + 1)).slice(-2);
+        var d = ("0" + val.getDate()).slice(-2);
+        val = y + "-" + m + "-" + d;
+      }
+      item[headers[j]] = val;
     }
     list.push(item);
   }

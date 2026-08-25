@@ -9,11 +9,14 @@ const { sendCertificateEmail, delay } = require('../services/email.service');
 const {
   insertCertificatesBatch,
   getAllCertificates,
+  getCertificateByCertId,
+  getCertificateByHash,
   getCertificatesForPdfGeneration,
   updateCertificatePdfUrl,
   getCertificatesForEmailing,
   markCertificateEmailed,
 } = require('../services/certificate.service');
+const { computeCertificateHash, verifyCertificateIntegrity } = require('../services/crypto.service');
 
 /**
  * POST /api/certificates/bulk-generate
@@ -372,6 +375,132 @@ router.post('/send-emails', authenticateUser, requireAdmin, async (req, res) => 
     return res.status(500).json({
       success: false,
       message: 'Internal server error while processing certificate emails',
+      error: error.message,
+    });
+  }
+});
+/**
+ * Helper to map DB certificate row to standard API format
+ */
+function mapCertificateToResponse(cert) {
+  let issueDateStr = cert.issue_date;
+  if (issueDateStr instanceof Date) {
+    issueDateStr = issueDateStr.toISOString().split('T')[0];
+  } else {
+    issueDateStr = String(issueDateStr || '').split('T')[0];
+  }
+
+  const rawStatus = cert.status || 'pending';
+  const displayStatus = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase();
+
+  return {
+    CertID: cert.cert_id,
+    RollNumber: cert.roll_number || 'N/A',
+    StudentName: cert.name,
+    Email: cert.email,
+    School: cert.course || 'USICT',
+    Course: cert.course || 'GGSIPU',
+    EventName: cert.event_name,
+    CertificateType: cert.cert_type || 'Participation',
+    IssueDate: issueDateStr,
+    Status: displayStatus,
+    SHA256Hash: cert.hash,
+    MerkleRoot: '8f2d4e910a11b12c13d14e15f16a17b18c19d20e21f22a23b24c25d26e27f28a',
+    DrivePdfUrl: cert.pdf_url || `https://drive.google.com/file/d/mock_${cert.cert_id}/view`,
+    QrVerificationUrl: `https://ggsipu.ac.in/verify?certId=${encodeURIComponent(cert.cert_id)}`,
+    ApprovedBy: displayStatus === 'Approved' ? 'Dean DSW (Authorized)' : '',
+    ApprovalDate: displayStatus === 'Approved' ? issueDateStr : '',
+  };
+}
+
+/**
+ * GET /api/certificates/verify/:certId
+ *
+ * Public endpoint: Verifies a certificate by its unique Certificate ID.
+ * Performs canonical cryptographic SHA-256 seal verification.
+ */
+router.get('/verify/:certId', async (req, res) => {
+  try {
+    const certId = req.params.certId;
+    if (!certId || !certId.trim()) {
+      return res.status(400).json({
+        success: false,
+        status: 'error',
+        message: 'Certificate ID is required for verification.',
+      });
+    }
+
+    const cert = await getCertificateByCertId(certId);
+    if (!cert) {
+      return res.status(404).json({
+        success: false,
+        status: 'not_found',
+        message: `No certificate found in GGSIPU Ledger matching '${certId}'`,
+      });
+    }
+
+    const computedHash = computeCertificateHash(cert);
+    const isIntegrityValid = String(computedHash).toLowerCase() === String(cert.hash).toLowerCase();
+
+    return res.status(200).json({
+      success: true,
+      status: 'found',
+      certificate: mapCertificateToResponse(cert),
+      integrityCheck: isIntegrityValid ? 'PASSED' : 'FAILED_TAMPERED',
+      recalculatedHash: computedHash,
+    });
+  } catch (error) {
+    console.error('[VERIFY ROUTE] Error verifying certificate by ID:', error);
+    return res.status(500).json({
+      success: false,
+      status: 'error',
+      message: 'Internal server error while verifying certificate',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/certificates/verify-hash/:hash
+ *
+ * Public endpoint: Verifies a certificate by its cryptographic SHA-256 digest.
+ */
+router.get('/verify-hash/:hash', async (req, res) => {
+  try {
+    const hash = req.params.hash;
+    if (!hash || !hash.trim()) {
+      return res.status(400).json({
+        success: false,
+        status: 'error',
+        message: 'SHA-256 hash is required for verification.',
+      });
+    }
+
+    const cert = await getCertificateByHash(hash);
+    if (!cert) {
+      return res.status(404).json({
+        success: false,
+        status: 'not_found',
+        message: 'No certificate matching SHA-256 hash found.',
+      });
+    }
+
+    const computedHash = computeCertificateHash(cert);
+    const isIntegrityValid = String(computedHash).toLowerCase() === String(cert.hash).toLowerCase();
+
+    return res.status(200).json({
+      success: true,
+      status: 'found',
+      certificate: mapCertificateToResponse(cert),
+      integrityCheck: isIntegrityValid ? 'PASSED' : 'FAILED_TAMPERED',
+      recalculatedHash: computedHash,
+    });
+  } catch (error) {
+    console.error('[VERIFY ROUTE] Error verifying certificate by hash:', error);
+    return res.status(500).json({
+      success: false,
+      status: 'error',
+      message: 'Internal server error while verifying certificate by hash',
       error: error.message,
     });
   }

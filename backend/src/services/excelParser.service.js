@@ -96,9 +96,6 @@ const HEADER_ALIASES = {
     'regno',
     'reg_no',
     'registrationno',
-    'certid',
-    'cert_id',
-    'id',
   ],
   cert_id: [
     'certid',
